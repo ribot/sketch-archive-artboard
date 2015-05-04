@@ -1,0 +1,77 @@
+// Populate User Flows (command control a)
+
+#import 'lib/sandbox.js'
+#import 'lib/utils.js'
+
+var archive = getArchivePage(),
+    currentPage = doc.currentPage(),
+    currentArtboard = doc.currentPage().currentArtboard(),
+    sharedTextStyles = doc.documentData().layerTextStyles(),
+    sharedObjectStyles = doc.documentData().layerStyles();
+
+
+// Main function
+function init() {
+  // Escape early if no artboard selected
+  if ( !currentArtboard ) {
+    doc.showMessage( "You'll have to select an artboard first" );
+    return;
+  }
+
+  // Deselect layers
+  currentPage.deselectAllLayers();
+
+  // Copy the artboard
+  var artboardToArchive = currentArtboard.copy()
+
+  // Add the copy to the archive
+  archive.addLayers( [ artboardToArchive ] );
+
+  // Loop through layers on the copy and remove shared stayles
+  var artboardLayers = artboardToArchive.layers().array();
+  processAllLayers( artboardLayers, removeSharedStyles );
+
+  // Delete the original from the current page
+  currentPage.removeLayer( currentArtboard );
+
+  // Refresh inspector to reflect changes.
+  doc.reloadInspector();
+
+  // All done...
+  doc.showMessage( "Archived: " + currentArtboard.name() );
+}
+
+
+// Remove shared styles from layer
+function removeSharedStyles( layer ) {
+  // Get relevant shared styles container
+  var sharedStyles = ( layer.class() == MSTextLayer ) ? sharedTextStyles : sharedObjectStyles;
+
+  // Check if this layer has a shared style
+  var style = layer.style();
+  var sharedStyle = sharedStyles.sharedStyleWithID( style.sharedObjectID() )
+
+  // 'Unlink' the shared style if there is one
+  if( sharedStyle ) {
+    style.setSharedObjectID( null );
+  }
+}
+
+
+// Get the 'Archive' page
+function getArchivePage() {
+  // Get the archive page
+  var archive = getPageByName( '-Archive' );
+
+  // Create it if there isn't one
+  if ( !archive ) {
+    archive = addPage( '-Archive', false );
+  }
+
+  // And return it
+  return archive;
+}
+
+
+// Kick it all off...
+init();
